@@ -172,4 +172,8 @@ else
 	TMP_RES=1
 fi
 
+[ -f "$LCFG_MNTPOINT_MODS/do_not_remove" ] || touch "$LCFG_MNTPOINT_MODS/do_not_remove"
+[ -f "$LCFG_MNTPOINT_MPBUILD/do_not_remove" ] || touch "$LCFG_MNTPOINT_MPBUILD/do_not_remove"
+[ -f "$LCFG_MNTPOINT_MPSCR/do_not_remove" ] || touch "$LCFG_MNTPOINT_MPSCR/do_not_remove"
+
 exit $TMP_RES
