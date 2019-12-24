@@ -122,13 +122,11 @@ LCFG_MNTPOINT_MPSCR_TEMPL="${LCFG_MNTPOINT_BASE}/${OPT_MPY_FW_VERS}/#TYPE#/mpscr
 
 LCFG_PATH_MODS="${VAR_MYDIR}/mods"
 
-LCFG_MPY_SDKCONFIG_DEF="sdkconfig"
-LCFG_MPY_SDKCONFIG_SRAM="sdkconfig.spiram"
-
 LCFG_MPY_FW_OUTP_FN_TEMPL="${VAR_MYDIR}/mpy-firmware-${OPT_MPY_FW_VERS}-#TYPE#.bin"
 
 # ----------------------------------------------------------
 
+LVAR_INTPATH_BUILDTRG=""
 LVAR_MNTPOINT_MPBUILD=""
 LVAR_MNTPOINT_MPSCR=""
 LVAR_MPY_SDKCONFIG=""
@@ -148,7 +146,7 @@ function _runCont() {
 			--rm \
 			-it \
 			-d \
-			-v "$LVAR_MNTPOINT_MPBUILD":/esp/micropython/ports/esp32/build \
+			-v "$LVAR_MNTPOINT_MPBUILD":/esp/micropython/ports/esp32/$LVAR_INTPATH_BUILDTRG \
 			-v "$LVAR_MNTPOINT_MPSCR":/esp/micropython/ports/esp32/scripts \
 			$TMP_USER \
 			"$LCFG_IMAGE_NAME":"$OPT_MPY_FW_VERS" \
@@ -157,6 +155,7 @@ function _runCont() {
 		echo "* Copy local modules to Docker Container..."
 		#docker exec "$LCFG_CONTAINER_NAME" rm -r /esp/micropython/ports/esp32/modules
 		#docker exec "$LCFG_CONTAINER_NAME" tar xf /esp/modules-org.tgz -C /esp/micropython/ports/esp32
+		find "$LCFG_PATH_MODS" -type f -name ".DS_Store" -exec rm "{}" \;
 		TMP_MYDIR_SED="$(echo -n "$VAR_MYDIR" | sed -e 's/\//\\\\\\\//g')"
 		for TMP_FN in "$LCFG_PATH_MODS"/*; do
 			TMP_BFN="$(basename "$TMP_FN")"
@@ -192,12 +191,37 @@ function _runMakeClean() {
 }
 
 function _runMakeAll() {
-	echo "* Using Board Definition '$LVAR_MPY_SDKCONFIG'"
-	_runCont "" "make SDKCONFIG=boards/${LVAR_MPY_SDKCONFIG}"
+	local TMP_VN=""
+	local TMP_SDKCONFIG="$LVAR_MPY_SDKCONFIG"
+	if [ "$OPT_MPY_FW_VERS" = "1.11" ]; then
+		TMP_SDKCONFIG="boards/${TMP_SDKCONFIG}"
+		TMP_VN="SDKCONFIG"
+	else
+		TMP_VN="BOARD"
+	fi
+	echo "* Using Board Definition '$TMP_SDKCONFIG'"
+	_runCont "" "make ${TMP_VN}=${TMP_SDKCONFIG}"
 }
 
 function _runBash() {
 	_runCont "root" "bash"
+}
+
+# Outputs the SDK/Board Config for the target ESP32 board
+function _getSdkConfig() {
+	if [ "$OPT_MPY_FW_VERS" = "1.11" ]; then
+		if [ "$OPT_FWTYPE_SRAM" = "true" ]; then
+			echo -n "sdkconfig.spiram"
+		else
+			echo -n "sdkconfig"
+		fi
+	else
+		if [ "$OPT_FWTYPE_SRAM" = "true" ]; then
+			echo -n "GENERIC_SPIRAM"
+		else
+			echo -n "GENERIC"
+		fi
+	fi
 }
 
 # Outputs the path to a mountpoint
@@ -207,6 +231,19 @@ function _getMpPath() {
 	local TMP_TYPESTR="def"
 	[ "$OPT_FWTYPE_SRAM" = "true" ] && TMP_TYPESTR="spiram"
 	echo -n "$1" | sed -e "s/#TYPE#/$TMP_TYPESTR/"
+}
+
+# Outputs the name of the subdirectory to the Docker Container's internal build directory for the specified target board
+function _getInternalBuildTrgDir() {
+	[ -z "$LVAR_MPY_SDKCONFIG" ] && {
+		echo "LVAR_MPY_SDKCONFIG empty." >/dev/stderr
+		return
+	}
+	if [ "$OPT_MPY_FW_VERS" = "1.11" ]; then
+		echo -n "build"
+	else
+		echo -n "build-$LVAR_MPY_SDKCONFIG"
+	fi
 }
 
 # Outputs the firmware filename
@@ -224,11 +261,24 @@ function _removeFwFile() {
 
 LVAR_MNTPOINT_MPBUILD="$(_getMpPath "$LCFG_MNTPOINT_MPBUILD_TEMPL")"
 LVAR_MNTPOINT_MPSCR="$(_getMpPath "$LCFG_MNTPOINT_MPSCR_TEMPL")"
+LVAR_MPY_SDKCONFIG="$(_getSdkConfig)"
 LVAR_MPY_FW_OUTP_FN="$(_getFwOutpFn)"
-if [ "$OPT_FWTYPE_SRAM" = "true" ]; then
-	LVAR_MPY_SDKCONFIG="$LCFG_MPY_SDKCONFIG_SRAM"
-else
-	LVAR_MPY_SDKCONFIG="$LCFG_MPY_SDKCONFIG_DEF"
+LVAR_INTPATH_BUILDTRG="$(_getInternalBuildTrgDir)"
+
+if [ -z "$LVAR_MNTPOINT_MPBUILD" -o "$LVAR_MNTPOINT_MPBUILD" = "." -o \
+		"$LVAR_MNTPOINT_MPBUILD" = "./" -o "$LVAR_MNTPOINT_MPBUILD" = "/" ]; then
+	echo "Invalid LVAR_MNTPOINT_MPBUILD. Aborting." >/dev/stderr
+	exit 1
+fi
+if [ -z "$LVAR_MNTPOINT_MPSCR" -o "$LVAR_MNTPOINT_MPSCR" = "." -o \
+		"$LVAR_MNTPOINT_MPSCR" = "./" -o "$LVAR_MNTPOINT_MPSCR" = "/" ]; then
+	echo "Invalid LVAR_MNTPOINT_MPSCR. Aborting." >/dev/stderr
+	exit 1
+fi
+if [ -z "$LVAR_INTPATH_BUILDTRG" -o "$LVAR_INTPATH_BUILDTRG" = "." -o \
+		"$LVAR_INTPATH_BUILDTRG" = "./" -o "$LVAR_INTPATH_BUILDTRG" = "/" ]; then
+	echo "Invalid LVAR_INTPATH_BUILDTRG. Aborting." >/dev/stderr
+	exit 1
 fi
 
 if [ "$OPT_R_BASH" = "true" ]; then
@@ -237,8 +287,13 @@ if [ "$OPT_R_BASH" = "true" ]; then
 elif [ "$OPT_R_CLEAN" = "true" ]; then
 	_removeFwFile
 	#
-	_runMakeClean
-	TMP_RES=$?
+	if [ "$OPT_MPY_FW_VERS" = "1.11" ]; then
+		_runMakeClean
+		TMP_RES=$?
+	else
+		rm -r "$LVAR_MNTPOINT_MPBUILD"/*
+		TMP_RES=0
+	fi
 elif [ "$OPT_R_MKALL" = "true" ]; then
 	_removeFwFile
 	#
