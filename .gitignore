@@ -1,13 +1,19 @@
 /mods/*
 !/mods/do_not_remove
-/mpbuild/*
-!/mpbuild/do_not_remove
-/mpscripts/*
-!/mpscripts/do_not_remove
+
+/**/def/mpbuild/*
+!/**/def/mpbuild/do_not_remove
+/**/spiram/mpbuild/*
+!/**/spiram/mpbuild/do_not_remove
+
+/**/def/mpscripts/*
+!/**/def/mpscripts/do_not_remove
+/**/spiram/mpscripts/*
+!/**/spiram/mpscripts/do_not_remove
 
 /mpy-firmware-*.bin
 
-/copy_to_rpi.sh
+/copy_to_remote.sh
 
 # =========================
 # IDE Files
