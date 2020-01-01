@@ -1,4 +1,4 @@
-# MicroPython Firmware Cross-Compiler
+# MicroPython Firmware Cross-Compiler using a Docker Image
 
 The `mpscripts/` folder is for Python code that will be 'baked-in'
 to the firmware but not frozen into more efficient and smaller code.  
@@ -14,17 +14,23 @@ First copy your custom MicroPython modules to `./mods/`.
 Then run the following commands:
 
 ```
-$ ./build_mpy.sh 1.11 clean
+Optional:
+	$ ./build_mpy.sh <VERSION> clean
 
 For the ESP32-WROOM32 with 520kB SRAM:
-	$ ./build_mpy.sh 1.11 mk-def
+	$ ./build_mpy.sh <VERSION> mk-def
 For the ESP32-WROVER-B with 520kB SRAM + 4MB SPI-RAM:
-	$ ./build_mpy.sh 1.11 mk-spiram
+	$ ./build_mpy.sh <VERSION> mk-spiram
 ```
 
 The new firmware binary will be copied to  
 
-- ESP32-WROOM32: `./mpy-firmware-1.11-def.bin`
-- ESP32-WROVER-B: `./mpy-firmware-1.11-spiram.bin`
+- ESP32-WROOM32: `./mpy-firmware-<VERSION>-def.bin`
+- ESP32-WROVER-B: `./mpy-firmware-<VERSION>-spiram.bin`
 
-If you'd like to compile a different firmware version just replace `1.11` with that version number in the commands above.
+Currently the MicroPython versions
+
+- 1.11 and
+- 1.12
+
+are available.
