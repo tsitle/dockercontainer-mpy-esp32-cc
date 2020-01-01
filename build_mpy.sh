@@ -112,6 +112,7 @@ fi
 
 # ----------------------------------------------------------
 
+LCFG_REPO_PREFIX="tsle"
 LCFG_IMAGE_NAME="mpy-esp32-cc-amd64"
 
 LCFG_CONTAINER_NAME="mpy-esp32-cc-$(echo -n "$OPT_MPY_FW_VERS" | tr -d .)"
@@ -123,6 +124,40 @@ LCFG_MNTPOINT_MPSCR_TEMPL="${LCFG_MNTPOINT_BASE}/${OPT_MPY_FW_VERS}/#TYPE#/mpscr
 LCFG_PATH_MODS="${VAR_MYDIR}/mods"
 
 LCFG_MPY_FW_OUTP_FN_TEMPL="${VAR_MYDIR}/mpy-firmware-${OPT_MPY_FW_VERS}-#TYPE#.bin"
+
+# ----------------------------------------------------------
+
+LVAR_IMAGE_VER="$OPT_MPY_FW_VERS"
+LVAR_IMG_FULL="${LCFG_IMAGE_NAME}:${LVAR_IMAGE_VER}"
+
+# ----------------------------------------------------------
+
+# @param string $1 Docker Image name
+# @param string $2 optional: Docker Image version
+#
+# @returns int If Docker Image exists 0, otherwise 1
+function _getDoesDockerImageExist() {
+	local TMP_SEARCH="$1"
+	[ -n "$2" ] && TMP_SEARCH="$TMP_SEARCH:$2"
+	local TMP_AWK="$(echo -n "$1" | sed -e 's/\//\\\//g')"
+	#echo "  checking '$TMP_SEARCH'"
+	local TMP_IMGID="$(docker image ls "$TMP_SEARCH" | awk '/^'$TMP_AWK' / { print $3 }')"
+	[ -n "$TMP_IMGID" ] && return 0 || return 1
+}
+
+_getDoesDockerImageExist "$LCFG_IMAGE_NAME" "$LVAR_IMAGE_VER"
+if [ $? -ne 0 ]; then
+	LVAR_IMG_FULL="${LCFG_REPO_PREFIX}/$LVAR_IMG_FULL"
+	_getDoesDockerImageExist "${LCFG_REPO_PREFIX}/${LCFG_IMAGE_NAME}" "$LVAR_IMAGE_VER"
+	if [ $? -ne 0 ]; then
+		echo "$VAR_MYNAME: Trying to pull image from repository '${LCFG_REPO_PREFIX}/'..."
+		docker pull ${LVAR_IMG_FULL}
+		if [ $? -ne 0 ]; then
+			echo "$VAR_MYNAME: Error: could not pull image '${LVAR_IMG_FULL}'. Aborting." >/dev/stderr
+			exit 1
+		fi
+	fi
+fi
 
 # ----------------------------------------------------------
 
@@ -149,7 +184,7 @@ function _runCont() {
 			-v "$LVAR_MNTPOINT_MPBUILD":/esp/micropython/ports/esp32/$LVAR_INTPATH_BUILDTRG \
 			-v "$LVAR_MNTPOINT_MPSCR":/esp/micropython/ports/esp32/scripts \
 			$TMP_USER \
-			"$LCFG_IMAGE_NAME":"$OPT_MPY_FW_VERS" \
+			"$LVAR_IMG_FULL" \
 			bash || exit 1
 	if [ "$OPT_R_MKALL" = "true" ]; then
 		echo "* Copy local modules to Docker Container..."
@@ -291,6 +326,7 @@ elif [ "$OPT_R_CLEAN" = "true" ]; then
 		_runMakeClean
 		TMP_RES=$?
 	else
+		echo "Removing '$LVAR_MNTPOINT_MPBUILD/*'..."
 		rm -r "$LVAR_MNTPOINT_MPBUILD"/*
 		TMP_RES=0
 	fi
