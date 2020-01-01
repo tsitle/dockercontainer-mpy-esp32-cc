@@ -1,4 +1,4 @@
-# MicroPython Firmware Cross-Compiler using a Docker Image for AMD64
+# MicroPython ESP32 Firmware Cross-Compiler using a Docker Image for AMD64
 
 The `mpscripts/` folder is for Python code that will be 'baked-in'
 to the firmware but not frozen into more efficient and smaller code.  
