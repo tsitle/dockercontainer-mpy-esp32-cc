@@ -15,12 +15,14 @@ Then run the following commands:
 
 ```
 Optional:
-	$ ./build_mpy.sh <VERSION> clean
+	$ ./build_mpy.sh <VERSION> clean def
+	or
+	$ ./build_mpy.sh <VERSION> clean spiram
 
 For the ESP32-WROOM32 with 520kB SRAM:
-	$ ./build_mpy.sh <VERSION> mk-def
+	$ ./build_mpy.sh <VERSION> mk def
 For the ESP32-WROVER-B with 520kB SRAM + 4MB SPI-RAM:
-	$ ./build_mpy.sh <VERSION> mk-spiram
+	$ ./build_mpy.sh <VERSION> mk spiram
 ```
 
 The new firmware binary will be copied to  
