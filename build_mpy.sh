@@ -57,8 +57,8 @@ function printUsageAndExit() {
 	echo "Examples: $VAR_MYNAME 1.11 bash" >/dev/stderr
 	echo "          $VAR_MYNAME 1.11 clean def" >/dev/stderr
 	echo "          $VAR_MYNAME 1.11 mk def" >/dev/stderr
-	echo "          $VAR_MYNAME 1.12 clean spiram" >/dev/stderr
-	echo "          $VAR_MYNAME 1.12 mk spiram" >/dev/stderr
+	echo "          $VAR_MYNAME 1.13 clean spiram" >/dev/stderr
+	echo "          $VAR_MYNAME 1.13 mk spiram" >/dev/stderr
 	exit 1
 }
 

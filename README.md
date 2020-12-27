@@ -33,6 +33,7 @@ The new firmware binary will be copied to
 Currently the MicroPython versions
 
 - 1.11 and
-- 1.12
+- 1.12 and
+- 1.13
 
 are available.
